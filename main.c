@@ -1,5 +1,7 @@
 #include "minishell.h"
 
+t_list *arr;
+
 void ft_set(char **line)
 {
          *line = (char*)malloc(sizeof(char) * 1);
@@ -78,7 +80,7 @@ void ft_red_plus(char **line, char **s)
 	(*s)[i] = '\0';
 }
 
-void ft_parsing_redirect(char **line, t_list *arr)
+void ft_parsing_redirect(char **line)
 {
 	t_arg *ra;
 	t_arg *tm1 = NULL;
@@ -104,7 +106,7 @@ void ft_parsing_redirect(char **line, t_list *arr)
 	}
 }
 
-void ft_parsing_flag(char **line, t_list *arr)
+void ft_parsing_flag(char **line)
 {
 	int c;
 
@@ -225,13 +227,13 @@ void	ft_db_quote(char **line, char **l, t_data *data)
 	}
 }
 
-void ft_parsing_arg(char **line, t_list *arr, t_data *data)
+void ft_parsing_arg(char **line, t_data *data)
 {
 	t_arg *tm = NULL;
 	t_arg *ar = NULL;
 	char *l = NULL;
 	
-	while (**line != '\0' && (line[0][0] != '|' && line[0][1] != '|'))
+	while (**line != '\0' && !(line[0][0] == '|' && line[0][1] == '|'))
 	{
 		ft_set(&l);
 		while (**line != ' ' && **line != '\0')
@@ -240,45 +242,92 @@ void ft_parsing_arg(char **line, t_list *arr, t_data *data)
 			ft_char(line, &l);
 			ft_db_quote(line, &l, data);
 			ft_path_parsing(line, &l, data);
-			ft_parsing_redirect(line, arr);
+			ft_parsing_redirect(line);
 		}
 		if (ft_strlen(l) != 0 && (**line == ' ' || **line == '\0'))
 		{
 			ar = ft_argnew(l, tm);
 			arr->arg = ar;
-	//		ft_lstadd_front(&(arr->arg), ar);
+		//	ft_lstadd_back(&(arr->arg), ar);
 			tm = ar;
-			ar = ar->next;
+			ar = arr->arg->next;
 		}
 		if (**line != '\0')
 			(*line)++;
 	}
-	while (arr->arg != NULL)
-	{
-		printf("ARG LIST %s\n", arr->arg->content);
-		arr->arg = arr->arg->prev;
-	}
-	while (arr->red != NULL)
+//	while (arr->arg != NULL)
+//	{
+	//	printf("ARG LIST %s\n", arr->arg->content);
+	//	arr->arg = arr->arg->prev;
+//	}
+/*	while (arr->red != NULL)
 	{
 		printf("RED LIST %s\n", arr->red->content);
 		arr->red = arr->red->prev;
-	}
+	}*/
 }
 
-void ft_parsing_post_cmd(char **line, t_list *arr, t_data *data)
+void ft_parsing_post_cmd(char **line, t_data *data)
 {
 	arr->red = NULL;
 	arr->arg = NULL;
-	ft_parsing_flag(line, arr);
+	ft_parsing_redirect(line);
+	ft_parsing_flag(line);
 	ft_skip_space(line);
-	ft_parsing_arg(line, arr, data);
+	ft_parsing_arg(line, data);
 	ft_skip_space(line);
+}
+
+int ft_count_arg(t_arg *som)
+{
+	t_arg	*tmp;
+	int i;
+
+	i = 0;
+	tmp = som;
+	while (tmp != NULL)
+	{
+		tmp = tmp->prev;
+		i++;
+	}
+	return (i);
+}
+
+void	ft_list_to_arr()
+{
+	int i;
+	int j;
+	
+	i = ft_count_arg(arr->arg);
+	j = ft_count_arg(arr->red);
+	arr->fin = (char**)malloc(sizeof(char*) * (i + j)  + 1);
+	arr->fin[i+j+1] = NULL;
+	while (i > 0)
+	{
+		arr->fin[i+j] = (char*)malloc(sizeof(char) * ft_strlen(arr->arg->content));
+		ft_strcat(&arr->fin[i+j], &arr->arg->content);
+		i--;
+		arr->arg = arr->arg->prev;
+	}
+	while (j > 0)
+	{
+		arr->fin[i+j] = (char*)malloc(sizeof(char) * ft_strlen(arr->red->content));
+		ft_strcat(&arr->fin[i+j], &arr->red->content);
+		j--;
+		arr->red = arr->red->prev;
+	}
+	arr->fin[0] = (char*)malloc(sizeof(char) * ft_strlen(arr->cmd));
+	ft_strcat(&arr->fin[i], &arr->cmd);
+	while (arr->fin[i] != NULL)
+	{
+		printf("FIN %s\n", arr->fin[i]);
+		i++;
+	}
 }
 
 void ft_line_parsing(char *line, t_data *data)
 {
 	t_list *tmp = NULL;
-	t_list *arr = NULL;
 	char *some;
 
 	while (*line != '\0')
@@ -288,10 +337,10 @@ void ft_line_parsing(char *line, t_data *data)
 		if (ft_strlen(some) != 0)
 		{
 			arr = ft_lstnew(some, tmp);
-			printf("COMAND %s\n", arr->cmd);
+			printf("CMD %s\n", arr->cmd);
 			ft_skip_space(&line);
 			if (*line != '\0')
-				ft_parsing_post_cmd(&line, arr, data);
+				ft_parsing_post_cmd(&line, data);
 		}
 		if (*line != '\0' && line[0] == '|' && line[1] == '|')
 		{
@@ -302,11 +351,11 @@ void ft_line_parsing(char *line, t_data *data)
 			arr->pipe = 0;
 		printf("NFLAG %d\n", arr->echo_nflag);
 		printf("PIPEFG %d\n", arr->pipe);
+		ft_list_to_arr();
 		tmp = arr;
-		arr = arr->next;
-	//	printf("%c\n", *(line));
+		if (*line != '\0')
+			arr = arr->next;
 		printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-		//printf("%s\n", *(arr->arg));
 	}
 }
 
@@ -322,8 +371,6 @@ void lsh_loop(char **envp)
 		printf(" > ");
 		line = lsh_read_line();
 		data->envp = envp;
-	//	ft_envp_parsing(envp, &data);
-	//	printf("%s\n", data->next->data);
 		ft_line_parsing(line, data);
 		status = lsh_execute(args);
 

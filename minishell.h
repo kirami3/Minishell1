@@ -13,7 +13,7 @@ typedef struct s_list
 	char *cmd;
 	struct s_arg *arg;
 	struct s_arg *red;
-	//двойной массив с аргументами с командой в начале
+	char **fin;
 	int echo_nflag;
 	int pipe;
 	struct s_list *next;
@@ -47,6 +47,8 @@ char *ft_osnova(char **s, char c);
 char **ft_split(char *s, char c);
 void ft_split_free(char **str);
 char	*ft_strcpy(char *src);
+t_arg	*ft_lstlast(t_arg *lst);
+void	ft_lstadd_back(t_arg **lst, t_arg *new);
 size_t ft_func(char *s, unsigned int start, size_t len);
 char *ft_substr(char *s, unsigned int start, size_t len);
 t_arg *ft_argnew(char *content, t_arg *prev);
