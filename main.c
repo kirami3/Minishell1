@@ -233,7 +233,7 @@ void ft_parsing_arg(char **line, t_data *data)
 	t_arg *ar = NULL;
 	char *l = NULL;
 	
-	while (**line != '\0' && !(line[0][0] == '|' && line[0][1] == '|'))
+	while (**line != '\0' && !(line[0][0] == '|'))// && line[0][1] != '|'))
 	{
 		ft_set(&l);
 		while (**line != ' ' && **line != '\0')
@@ -330,7 +330,7 @@ void ft_line_parsing(char *line, t_data *data)
 	t_list *tmp = NULL;
 	char *some;
 
-	while (*line != '\0')
+	while (*line != '\0' && *line != '|')
 	{
 		ft_skip_space(&line);
 		some = ft_parsing_cmd(&line, arr);
@@ -342,7 +342,8 @@ void ft_line_parsing(char *line, t_data *data)
 			if (*line != '\0')
 				ft_parsing_post_cmd(&line, data);
 		}
-		if (*line != '\0' && line[0] == '|' && line[1] == '|')
+		printf("CHAR ~%c~\n", *line);
+		if (*line != '\0' && line[0] == '|' && line[1] != '|')
 		{
 			line += 2;
 			arr->pipe = 1;
@@ -370,16 +371,17 @@ void lsh_loop(char **envp)
 	{
 		printf(" > ");
 		line = lsh_read_line();
-		data->envp = envp;
+		data = ft_datanew(envp);
 		ft_line_parsing(line, data);
 		status = lsh_execute(args);
 
-		free(line);
+	//	free(line);
 	}
 }
 
 int main(int argc, char **argv, char **envp)
 {
 	lsh_loop(envp);
-	return EXIT_SUCCESS;
+	return(0);
+	//return EXIT_SUCCESS;
 }
